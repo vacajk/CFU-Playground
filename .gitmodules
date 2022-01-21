@@ -9,7 +9,7 @@
 	url = https://github.com/enjoy-digital/litedram.git
 [submodule "soc/deps/litex_boards"]
 	path = third_party/python/litex_boards
-	url = https://github.com/litex-hub/litex-boards.git
+	url = git@github.com:vacajk/litex-boards.git
 [submodule "soc/deps/liteeth"]
 	path = third_party/python/liteeth
 	url = https://github.com/enjoy-digital/liteeth.git

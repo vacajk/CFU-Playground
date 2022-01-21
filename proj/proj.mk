@@ -24,16 +24,16 @@
 # Arty builds require 3 parts:
 # - SoC Gateware
 # - SoC Software - BIOS, libraries and #includes
-# - The main C program 
+# - The main C program
 #
 # Renode builds are quite similar to Arty, and use the same Soc Software
 # and C program builds.
 #
 # Simulator builds are a little different:
 # - Verilator C++ instead of Gateware
-# - Soc Software is different due to the simulator having a different 
+# - Soc Software is different due to the simulator having a different
 #   set of peripherals
-# - The main C program requires rebuilding since it uses different Soc 
+# - The main C program requires rebuilding since it uses different Soc
 #   Software.
 #
 # To run on Arty (from within proj/xxx subdirectory):
@@ -50,8 +50,11 @@ export UART_SPEED ?= 1843200
 export PROJ       := $(lastword $(subst /, ,${CURDIR}))
 export CFU_ROOT   := $(realpath $(CURDIR)/../..)
 export PLATFORM   ?= common_soc
-export TARGET     ?= digilent_arty
-export TTY        ?= $(or $(wildcard /dev/ttyUSB?), $(wildcard /dev/ttyACM?))
+export TARGET     ?= xilinx_zcu106
+
+# export TTY        ?= $(or $(wildcard /dev/ttyUSB?), $(wildcard /dev/ttyACM?))
+# ZCU106 use PL UART2
+export TTY        ?= /dev/ttyUSB2
 
 RUN_MENU_ITEMS    ?=1 1 1
 TEST_MENU_ITEMS   ?=5
@@ -77,7 +80,7 @@ export DEFINES    += PLATFORM_$(PLATFORM)
 export DEFINES    += PLATFORM=$(PLATFORM)
 
 SHELL           := /bin/bash
-CRC             := 
+CRC             :=
 #CRC             := --no-crc
 
 #
@@ -259,7 +262,7 @@ tflite-micro-src: $(BUILD_DIR)/src
 	$(COPY) $(TFLM_TP_DIR)/ruy/ruy/profiler/instrumentation.h $(BUILD_DIR)/src/third_party/ruy/ruy/profiler
 
 .PHONY: build-dir
-build-dir: $(BUILD_DIR)/src tflite-micro-src $(BUILD_DIR_EXTRA_DEP) 
+build-dir: $(BUILD_DIR)/src tflite-micro-src $(BUILD_DIR_EXTRA_DEP)
 	@echo "build-dir: copying source to build dir"
 	$(COPY) $(COMMON_DIR)/*              $(BUILD_DIR)
 	$(COPY) $(MLCOMMONS_SRC_DIR)/*       $(BUILD_DIR)/src
@@ -270,7 +273,7 @@ build-dir: $(BUILD_DIR)/src tflite-micro-src $(BUILD_DIR_EXTRA_DEP)
 ifneq ($(wildcard $(COMMON_DIR)/_$(PLATFORM)/$(TARGET)/*),)
 	$(COPY) $(COMMON_DIR)/_$(PLATFORM)/$(TARGET)/* $(BUILD_DIR)
 endif
-	
+
 .PHONY: litex-software
 litex-software: $(CFU_VERILOG)
 	$(SOC_MK) litex-software
@@ -307,11 +310,11 @@ ifeq 'hps' '$(PLATFORM)'
 load: $(SOFTWARE_BIN)
 	@echo Running interactively on HPS Board
 	$(CFU_ROOT)/scripts/hps_prog $(SOFTWARE_BIN) program
-	$(LXTERM) --speed 115200 $(TTY)
+	sudo $(LXTERM) --speed 115200 $(TTY)
 
 connect:
 	@echo Connecting to HPS Board
-	$(LXTERM) --speed 115200 $(TTY)
+	sudo $(LXTERM) --speed 115200 $(TTY)
 else
 load: $(SOFTWARE_BIN)
 	@echo Running interactively on FPGA Board
@@ -319,11 +322,11 @@ load: $(SOFTWARE_BIN)
 # This isn't ideal, the logic is starting to get too voluminous for a Makefile.
 	$(SOC_MK) load_hook
 	@while [ ! -e $(TTY) ]; do echo "Waiting for UART"; sleep 1; done
-	$(LXTERM) --speed $(UART_SPEED) $(CRC) --kernel $(SOFTWARE_BIN) $(TTY)
+	sudo $(LXTERM) --speed $(UART_SPEED) $(CRC) --kernel $(SOFTWARE_BIN) $(TTY)
 
 connect:
 	@echo Connecting to board
-	$(LXTERM) --speed $(UART_SPEED) $(CRC) --kernel $(SOFTWARE_BIN) $(TTY)
+	sudo $(LXTERM) --speed $(UART_SPEED) $(CRC) --kernel $(SOFTWARE_BIN) $(TTY)
 endif
 
 else
